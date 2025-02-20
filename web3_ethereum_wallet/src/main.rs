@@ -1,6 +1,7 @@
 use ethers::types::TransactionRequest as EthersTxRequest;
 use ethers::types::transaction::eip2718::TypedTransaction;
 use ethers::core::rand::thread_rng;
+use web3::contract::{Contract, Options};
 use ethers::prelude::*;
 use ethers::signers::LocalWallet;
 use web3::transports::Http;
@@ -9,6 +10,8 @@ use web3::Web3;
 use dotenv::dotenv;
 use std::env;
 use hex::encode;
+mod contract;
+use ethers::abi::Token;
 
 #[tokio::main]
 async fn main() -> web3::Result<()> {
@@ -22,14 +25,16 @@ async fn main() -> web3::Result<()> {
     //receiver address
     // let recv_sddr= "0xf131Dd488dAC83a7fb5A8bB9f57d05a1e54ef100"; // chnage to specific 
 
-
     println!("New Ethereum Wallet Address: {:?}", wallet_address);
     println!("Private Key: {:?}", private_key);
+
 
     // Connect to Ethereum node (Infura, Alchemy, or Local Node)
     let rpc_url = env::var("ETHEREUM_RPC_URL").expect(" ETHEREUM_RPC_URL not found in .env");
     let transport = Http::new(&rpc_url).unwrap(); //unwrap to solve error
     let web3 = Web3::new(transport);
+
+    
 
 
     // Fetch balance
@@ -94,20 +99,78 @@ async fn main() -> web3::Result<()> {
             tokio::time::sleep(std::time::Duration::from_millis(10)).await; // Wait for 5 seconds before checking again
         }
     }
-    let receipt = receipt.unwrap();
-    println!("=============================");
-    println!("||==>Transaction Receipt:<===");
-    println!("=============================");
-    println!("||  Transaction Index: {:?}", receipt.transaction_index);
-    println!("||  Transaction Hash: {:?} ", receipt.transaction_hash);
-    println!("||  Block Number: {:?}", receipt.block_number.unwrap_or_default());
-    println!("||  From: {:?}", receipt.from);
-    println!("||  To: {:?}", receipt.to.unwrap_or_default());
-    println!("||  Gas Used: {:?}", receipt.gas_used.unwrap_or_default());
-    println!("||  Status: {:?}", if receipt.status == Some(1.into()) { "Success" } else { "Failed" });
-    println!("=============================");
+        let receipt = receipt.unwrap();
+        println!("=============================");
+        println!("||==>Transaction Receipt:<===");
+        println!("=============================");
+        println!("||  Transaction Index: {:?}", receipt.transaction_index);
+        println!("||  Transaction Hash: {:?} ", receipt.transaction_hash);
+        println!("||  Block Number: {:?}", receipt.block_number.unwrap_or_default());
+        println!("||  From: {:?}", receipt.from);
+        println!("||  To: {:?}", receipt.to.unwrap_or_default());
+        println!("||  Gas Used: {:?}", receipt.gas_used.unwrap_or_default());
+        println!("||  Status: {:?}", if receipt.status == Some(1.into()) { "Success" } else { "Failed" });
+        println!("=============================");
+
+
+        // contract::main();
+        println!("Interacting with the smart contract...");
+
+        let contract_address: Address = env::var("CONTRACT_ADDRESS").expect("CONTRACT_ADDRESS not found in .env").parse::<H160>().unwrap();
+        let abi = include_str!("storage_abi.json");
+
+        let contract = Contract::from_json(web3.eth(), contract_address, abi.as_bytes()).unwrap();
+
+        // Store a new value in the contract
+        let store_value: U256 = 55.into();
+
+        let nonce = web3.eth().transaction_count(sender, None).await?;
+        let gas_limit = U256::from(100000);
+
+        let mut tx: TypedTransaction = EthersTxRequest {
+            from: Some(sender),
+            to: Some(ethers::types::NameOrAddress::Address(contract_address)),
+            gas: Some(gas_limit),
+            gas_price: Some(gas_price),
+            nonce: Some(nonce),
+            data: Some(contract.abi().function("store").unwrap().encode_input(&[Token::Uint(store_value)]).unwrap().into()),
+            value: Some(U256::zero()), // No ETH transfer, just function call
+            ..Default::default()
+        }
+        .into();
+
+        tx.set_chain_id(chain_id);
+
+        let signature = sender_wallet.sign_transaction(&tx).await.unwrap();
+        let rlp_signed_tx = tx.rlp_signed(&signature);
+        let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(rlp_signed_tx.0.to_vec())).await?;
+
+
+        println!("Stored Value Transaction Hash: {:?}", tx_hash);
+
+        println!("Waiting for transaction Confirmation...");
+        loop {
+            if let Some(receipt) = web3.eth().transaction_receipt(tx_hash).await? {
+                if receipt.status.unwrap_or_default().low_u64() == 1 {
+                    println!("Transaction confirmed!");
+                    break;
+                }
+            }
+        }
+
+        // Retrieve stored value
+        let stored_value: U256 = contract.query("retrieve", (), None, Options::default(), None).await.unwrap();
+        println!("Stored Value in Contract: {}", stored_value);
+
+       
 
     Ok(())
     
 }
+
+// fn main() {
+//     println!("Hello, world!");
+//     contract::main();
+// }
+
 

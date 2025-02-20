@@ -1,3 +1,4 @@
 /target
 /.env
 /backup.rs
+/src/contracts.rs

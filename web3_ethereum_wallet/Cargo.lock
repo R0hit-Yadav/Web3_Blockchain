@@ -3888,6 +3888,8 @@ dependencies = [
  "dotenv",
  "ethers",
  "hex",
+ "serde",
+ "serde_json",
  "tokio",
  "web3",
 ]
