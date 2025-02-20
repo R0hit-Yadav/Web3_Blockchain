@@ -9,7 +9,6 @@ use web3::Web3;
 use dotenv::dotenv;
 use std::env;
 use hex::encode;
-mod contract;
 use ethers::abi::Token;
 
 #[tokio::main]
