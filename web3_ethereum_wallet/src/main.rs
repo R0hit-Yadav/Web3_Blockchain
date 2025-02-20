@@ -1,6 +1,5 @@
 use ethers::types::TransactionRequest as EthersTxRequest;
 use ethers::types::transaction::eip2718::TypedTransaction;
-use ethers::core::rand::thread_rng;
 use web3::contract::{Contract, Options};
 use ethers::prelude::*;
 use ethers::signers::LocalWallet;
@@ -18,9 +17,8 @@ async fn main() -> web3::Result<()> {
     dotenv().ok(); // Load .env file
 
     // Generate a new Ethereum wallet
-    let wallet = LocalWallet::new(&mut thread_rng());
-    let wallet_address = wallet.address();
-    let private_key = encode(wallet.signer().to_bytes()); 
+    let wallet = LocalWallet::new(&mut rand::thread_rng());
+    let (wallet_address, private_key) = (wallet.address(), encode(wallet.signer().to_bytes()));
 
     //receiver address
     // let recv_sddr= "0xf131Dd488dAC83a7fb5A8bB9f57d05a1e54ef100"; // chnage to specific 
@@ -30,12 +28,8 @@ async fn main() -> web3::Result<()> {
 
 
     // Connect to Ethereum node (Infura, Alchemy, or Local Node)
-    let rpc_url = env::var("ETHEREUM_RPC_URL").expect(" ETHEREUM_RPC_URL not found in .env");
-    let transport = Http::new(&rpc_url).unwrap(); //unwrap to solve error
-    let web3 = Web3::new(transport);
-
+    let web3 = Web3::new(Http::new(&env::var("ETHEREUM_RPC_URL").expect("Missing ETHEREUM_RPC_URL"))?);
     
-
 
     // Fetch balance
     let balance: U256 = web3.eth().balance(wallet_address, None).await?;
@@ -43,30 +37,24 @@ async fn main() -> web3::Result<()> {
     println!("Balance New Wallet: {} ETH", balance_in_eth);
 
     // Send transaction (if balance is sufficient)
-    let sender_private_key = env::var("SENDER_PRIVATE_KEY").expect("SENDER_PRIVATE_KEY not found in .env");
-    let sender_wallet: LocalWallet = sender_private_key.parse().unwrap();
+    let sender_wallet: LocalWallet = env::var("SENDER_PRIVATE_KEY").expect("Missing SENDER_PRIVATE_KEY").parse().unwrap();
     let sender = sender_wallet.address();
-
-    let value = U256::exp10(16); // 16=0.01 ETH //18=1 ETH
-    let gas_limit = U256::from(21000);
 
     //check balance of Sender
     let balance_sender: U256 = web3.eth().balance(sender, None).await?;
     let balance_in_eth_sender = ethers::utils::format_units(balance_sender, "ether").unwrap();
     println!("Balance Of Sender: {} ETH", balance_in_eth_sender);
 
+    let (gas_price, gas_limit, value) = (web3.eth().gas_price().await?, U256::from(21000), U256::exp10(16));
 
-    let gas_price = web3.eth().gas_price().await?; // get current gas price
-    let total_gas_cost = gas_limit * gas_price; // total gas cost (gas_limit * gas_price)
-
-    if balance_sender < value + total_gas_cost {
+    if balance_sender < value + (gas_limit * gas_price) {
         println!("Insufficient balance for transaction.");
         return Ok(());
-   }
+    }
 
     let nonce = web3.eth().transaction_count(sender, None).await?;
     let chain_id = web3.eth().chain_id().await?.as_u64();
-    // println!("Chain ID: {:?}", chain_id);
+
 
     let mut tx: TypedTransaction = EthersTxRequest {
         from: Some(sender),
@@ -81,25 +69,18 @@ async fn main() -> web3::Result<()> {
     .into();
 
     tx.set_chain_id(chain_id);
-
     let signature = sender_wallet.sign_transaction(&tx).await.unwrap();
-    let rlp_signed_tx = tx.rlp_signed(&signature);
-
-    let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(rlp_signed_tx.0.to_vec())).await?;
+    let bytes: Vec<u8> = tx.rlp_signed(&signature).to_vec();
+    let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(bytes)).await.unwrap();
     println!("Transaction sent! Hash: {:?}", tx_hash);
 
     println!("Transaction Receipt Generating....");
 
-    let mut receipt = None;
-    while receipt.is_none() 
-    {
-        receipt = web3.eth().transaction_receipt(tx_hash).await?;
-        if receipt.is_none() 
-        {
-            tokio::time::sleep(std::time::Duration::from_millis(10)).await; // Wait for 5 seconds before checking again
+        while web3.eth().transaction_receipt(tx_hash).await?.is_none() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
-    }
-        let receipt = receipt.unwrap();
+
+        let receipt = web3.eth().transaction_receipt(tx_hash).await?.unwrap();
         println!("=============================");
         println!("||==>Transaction Receipt:<===");
         println!("=============================");
@@ -113,24 +94,22 @@ async fn main() -> web3::Result<()> {
         println!("=============================");
 
 
-        // contract::main();
+        //intreracting with contract
         println!("Interacting with the smart contract...");
 
         let contract_address: Address = env::var("CONTRACT_ADDRESS").expect("CONTRACT_ADDRESS not found in .env").parse::<H160>().unwrap();
-        let abi = include_str!("storage_abi.json");
-
-        let contract = Contract::from_json(web3.eth(), contract_address, abi.as_bytes()).unwrap();
+        let contract = Contract::from_json(web3.eth(), contract_address, include_str!("storage_abi.json").as_bytes()).unwrap();
+        
 
         // Store a new value in the contract
-        let store_value: U256 = 55.into();
-
+        let store_value: U256 = 100.into();
         let nonce = web3.eth().transaction_count(sender, None).await?;
-        let gas_limit = U256::from(100000);
+
 
         let mut tx: TypedTransaction = EthersTxRequest {
             from: Some(sender),
             to: Some(ethers::types::NameOrAddress::Address(contract_address)),
-            gas: Some(gas_limit),
+            gas: Some(U256::from(100000)),
             gas_price: Some(gas_price),
             nonce: Some(nonce),
             data: Some(contract.abi().function("store").unwrap().encode_input(&[Token::Uint(store_value)]).unwrap().into()),
@@ -139,38 +118,25 @@ async fn main() -> web3::Result<()> {
         }
         .into();
 
+
         tx.set_chain_id(chain_id);
-
         let signature = sender_wallet.sign_transaction(&tx).await.unwrap();
-        let rlp_signed_tx = tx.rlp_signed(&signature);
-        let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(rlp_signed_tx.0.to_vec())).await?;
-
-
+        let bytes: Vec<u8> = tx.rlp_signed(&signature).to_vec();
+        let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(bytes)).await.unwrap();
         println!("Stored Value Transaction Hash: {:?}", tx_hash);
 
+
         println!("Waiting for transaction Confirmation...");
-        loop {
-            if let Some(receipt) = web3.eth().transaction_receipt(tx_hash).await? {
-                if receipt.status.unwrap_or_default().low_u64() == 1 {
-                    println!("Transaction confirmed!");
-                    break;
-                }
-            }
+        while web3.eth().transaction_receipt(tx_hash).await?.is_none() {
+            tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
+        println!("Transaction confirmed!");
 
         // Retrieve stored value
         let stored_value: U256 = contract.query("retrieve", (), None, Options::default(), None).await.unwrap();
         println!("Stored Value in Contract: {}", stored_value);
 
-       
-
     Ok(())
     
 }
-
-// fn main() {
-//     println!("Hello, world!");
-//     contract::main();
-// }
-
 
