@@ -56,11 +56,12 @@ async fn main() -> web3::Result<()> {
         let filter = FilterBuilder::default().address(vec![contract_address]).topics
         (Some(vec![H256::from_slice(ethers::utils::keccak256("NumberUpdatedEvent(address)").as_ref()),]),None,None,None,)
         .build();
+    
         let mut event_stream = web3.eth_subscribe().subscribe_logs(filter).await.unwrap();
             
 
         // Store a new value in the contract
-        let store_value: U256 = 50.into();
+        let store_value: U256 = 2312.into();
         let nonce = web3.eth().transaction_count(sender, None).await?;
 
         let mut tx: TypedTransaction = EthersTxRequest {
@@ -80,7 +81,7 @@ async fn main() -> web3::Result<()> {
         let signature = sender_wallet.sign_transaction(&tx).await.unwrap();
         let bytes: Vec<u8> = tx.rlp_signed(&signature).to_vec();
         let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(bytes)).await.unwrap();
-        println!("Stored Value Transaction Hash: {:?}", tx_hash);
+        // println!("Stored Value Transaction Hash: {:?}", tx_hash);
 
 
         println!("Waiting for transaction Confirmation...");
@@ -92,7 +93,8 @@ async fn main() -> web3::Result<()> {
 
 
         println!("Listening for NumberUpdatedEvent...");
-        while let Some(log) = event_stream.next().await {
+        while let Some(log) = event_stream.next().await 
+        {
             match log {
                 Ok(log_entry) => {
                     let raw_log = RawLog {
@@ -101,22 +103,29 @@ async fn main() -> web3::Result<()> {
                     };
     
                     if let Ok(decoded_log) = contract.abi().event("NumberUpdatedEvent").unwrap().parse_log(raw_log) {
+                        let log_index = log_entry.log_index.unwrap();
                         let sender: Address = decoded_log.params[0].value.clone().into_address().unwrap();
                         let tx_hash: H256 = log_entry.transaction_hash.unwrap();
+                        let tx_index = log_entry.transaction_index.unwrap();
                         let block_number = log_entry.block_number.unwrap();
+                        let block_hash: H256 = log_entry.block_hash.unwrap();
     
                         println!("Event Received!");
+                        println!("Log Index: {}", log_index);
                         println!("Transaction Hash: {:?}", tx_hash);
+                        println!("Transaction Index: {:?}", tx_index);
                         println!("Sender: {:?}", sender);
                         println!("Block Number: {:?}", block_number);
+                        println!("Block Hash: {:?}", block_hash);
     
                         // Retrieve the updated value
                         let stored_value: U256 = contract.query("retrieve", (), None, Options::default(), None).await.unwrap();
-                        println!("Updated Value in Contract: {}", stored_value);
+                        println!("Event Value in Contract: {}", stored_value);
                     }
                 }
                 Err(e) => println!("Error listening to event: {:?}", e),
             }
+            break;
         }
 
 
