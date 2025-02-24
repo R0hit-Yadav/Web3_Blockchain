@@ -1,5 +1,5 @@
 [package]
-name = "web3_ethereum_wallet"
+name = "scan"
 version = "0.1.0"
 edition = "2021"
 
