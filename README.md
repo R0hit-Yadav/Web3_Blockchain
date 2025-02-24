@@ -1,4 +1,4 @@
-# 1.Ethereum Wallet & Smart Contract Interaction in Rust
+# 1️⃣.Ethereum Wallet & Smart Contract Interaction in Rust
 
 This project demonstrates how to create an Ethereum wallet, check balances, send transactions, and 
 interact with a smart contract using Rust and the `ethers-rs` and `web3` crates.
@@ -109,7 +109,7 @@ Stored Value in Contract: 100
 
 
 
-# 2.Ethereum Wallet & Real-time Transaction Tracker in Rust
+# 2️⃣.Ethereum Wallet & Real-time Transaction Tracker in Rust
 
 This project demonstrates how to interact with the Ethereum blockchain using Rust. It allows you to track transactions to a specific Ethereum address in real-time using WebSockets and the `web3` crate.
 
@@ -186,7 +186,7 @@ Incoming Tx: 0xabc123...
 
 
 
-# 3.Ethereum Smart Contract Interaction & Event Listen using Rust
+# 3️⃣.Ethereum Smart Contract Interaction & Event Listen using Rust
 
 This project demonstrates how to interact with an Ethereum smart contract using Rust, `ethers-rs`, and `web3`. It covers connecting to an Ethereum node, checking balances, sending transactions, and listening for events.
 
