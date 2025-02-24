@@ -184,3 +184,58 @@ Incoming Tx: 0xabc123...
 - Keep your .env file secure and never expose API keys.
 - Use testnets for development to avoid real ETH expenses.
 
+
+
+# 3.Ethereum Smart Contract Interaction & Event Listen using Rust
+
+This project demonstrates how to interact with an Ethereum smart contract using Rust, `ethers-rs`, and `web3`. It covers connecting to an Ethereum node, checking balances, sending transactions, and listening for events.
+
+## 🚀 Features
+- Connect to Ethereum via WebSockets.
+- Check the balance of a sender wallet.
+- Send transactions to a smart contract.
+- Listen Event for and process contract events.
+- Retrieve stored values from the contract.
+
+## ▶️ Compile and Run
+
+```sh
+cargo run
+```
+
+## 📜 How It Works
+
+### 1️⃣ Connect to an Ethereum Node
+- Uses `ETHEREUM_WS_URL` from `.env` to establish a WebSocket connection.
+
+### 2️⃣ Listens for the NumberUpdatedEvent emitted by the smart contract.
+
+### 3️⃣ Retrieves the updated stored value from the contract.
+
+
+## 🧠 What You Will Learn
+- Connecting Rust to Ethereum via WebSockets.
+- Subscribing to Event
+- Fetching and filtering transactions of Event
+
+## ⚡ Example Output
+```yaml
+Balance Of Sender: 7.739316169149609092 ETH
+Interacting with the smart contract...
+Waiting for transaction Confirmation...
+Transaction confirmed!
+
+Listening for NumberUpdatedEvent...
+Event Received!
+Log Index: 485
+Transaction Hash: 0xe2e229195297d4828cc917955735dda3c790d7086f670bca9bbd7735892ae8ad
+Transaction Index: 20
+Sender: 0xb53d942b79ab480e029220f768cf7b1629acfcf4
+Block Number: 3415923
+Block Hash: 0xe58dfa18a91e12fc1d9192387d2b5f8c52211e050a89b7508b353f111e76dcd2
+Event Value in Contract: 2312
+```
+
+## Thank You 🙏
+
+
