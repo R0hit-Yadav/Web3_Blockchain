@@ -26,7 +26,7 @@ async fn main() -> web3::Result<()> {
     let (wallet_address, private_key) = (wallet.address(), encode(wallet.signer().to_bytes()));
 
     //receiver address
-    let recv_sddr= "0xf131Dd488dAC83a7fb5A8bB9f57d05a1e54ef100"; // chnage to specific
+    let recv_sddr= "0x40C34974068CBe7Ef930e4585a68740a7aee2B89"; // chnage to specific
 
     println!("New Ethereum Wallet Address: {:?}", wallet_address);
     println!("Private Key: {:?}", private_key);

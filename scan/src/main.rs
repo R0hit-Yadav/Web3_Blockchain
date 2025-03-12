@@ -8,16 +8,16 @@ async fn main() -> web3::Result<()> {
 
     // Connect to Ethereum via WebSockets for realtime
 
-    let websocket = web3::transports::WebSocket::new("wss://mainnet.infura.io/ws/v3/62aec48f670f42aa88de8fcd3ae71a0e").await?;
-    // let websocket = web3::transports::WebSocket::new("wss://holesky.infura.io/ws/v3/62aec48f670f42aa88de8fcd3ae71a0e").await?;
+    // let websocket = web3::transports::WebSocket::new("wss://mainnet.infura.io/ws/v3/62aec48f670f42aa88de8fcd3ae71a0e").await?;
+    let websocket = web3::transports::WebSocket::new("wss://sepolia.infura.io/ws/v3/dccf0f92e7d3450fb9e5eb8f49bd84f5").await?;
 
     
     let web3 = web3::Web3::new(websocket);
 
     // Target Eth address to fetch
 
-    let target_address: Address = "0x3328F7f4A1D1C57c35df56bBf0c9dCAFCA309C49".parse().unwrap();
-    // let target_address: Address = "0xf131Dd488dAC83a7fb5A8bB9f57d05a1e54ef100".parse().unwrap();
+    // let target_address: Address = "0x3328F7f4A1D1C57c35df56bBf0c9dCAFCA309C49".parse().unwrap();
+    let target_address: Address = "0x40C34974068CBe7Ef930e4585a68740a7aee2B89".parse().unwrap();
 
     println!("Listening for transactions to: {:?}", target_address);
 
