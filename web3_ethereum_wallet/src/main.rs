@@ -26,8 +26,9 @@ async fn main() -> web3::Result<()> {
     let (wallet_address, private_key) = (wallet.address(), encode(wallet.signer().to_bytes()));
 
     //receiver address
+    println!("");
+    println!("Generating New Ethereum Wallet Address...");
     let recv_sddr= "0x40C34974068CBe7Ef930e4585a68740a7aee2B89"; // chnage to specific
-
     println!("New Ethereum Wallet Address: {:?}", wallet_address);
     println!("Private Key: {:?}", private_key);
 
@@ -40,6 +41,7 @@ async fn main() -> web3::Result<()> {
     let balance: U256 = web3.eth().balance(wallet_address, None).await?;
     let balance_in_eth = ethers::utils::format_units(balance, "ether").unwrap();
     println!("Balance New Wallet: {} ETH", balance_in_eth);
+    println!("");
 
     // Send transaction (if balance is sufficient)
     let sender_wallet: LocalWallet = env::var("SENDER_PRIVATE_KEY").expect("Missing SENDER_PRIVATE_KEY").parse().unwrap();
@@ -56,7 +58,8 @@ async fn main() -> web3::Result<()> {
         println!("Insufficient balance for transaction.");
         return Ok(());
     }
-
+    println!("Sending transaction...");
+    println!("");
     let nonce = web3.eth().transaction_count(sender, None).await?;
     let chain_id = web3.eth().chain_id().await?.as_u64();
 
@@ -77,9 +80,10 @@ async fn main() -> web3::Result<()> {
     let signature = sender_wallet.sign_transaction(&tx).await.unwrap();
     let bytes: Vec<u8> = tx.rlp_signed(&signature).to_vec();
     let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(bytes)).await.unwrap();
-    println!("Transaction sent! Hash: {:?}", tx_hash);
+    println!("Transaction sent! \nHash: {:?}", tx_hash);
 
     println!("Transaction Receipt Generating....");
+    println!("");
 
         while web3.eth().transaction_receipt(tx_hash).await?.is_none() {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
@@ -98,7 +102,8 @@ async fn main() -> web3::Result<()> {
         println!("||  Status: {:?}", if receipt.status == Some(1.into()) { "Success" } else { "Failed" });
         println!("=============================");
 
-
+        println!("");
+        println!("");
         //intreracting with contract
         println!("Interacting with the smart contract...");
 
@@ -129,14 +134,14 @@ async fn main() -> web3::Result<()> {
         let bytes: Vec<u8> = tx.rlp_signed(&signature).to_vec();
         let tx_hash = web3.eth().send_raw_transaction(web3::types::Bytes(bytes)).await.unwrap();
         println!("Stored Value Transaction Hash: {:?}", tx_hash);
-
+        println!("");
 
         println!("Waiting for transaction Confirmation...");
         while web3.eth().transaction_receipt(tx_hash).await?.is_none() {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
         println!("Transaction confirmed!");
-
+        println!("");
         // Retrieve stored value
         let stored_value: U256 = contract.query("retrieve", (), None, Options::default(), None).await.unwrap();
         println!("Stored Value in Contract: {}", stored_value);

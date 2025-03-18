@@ -23,7 +23,7 @@ pub fn run_ui(user_address: &str, transactions: &[Transaction], graph: &DiGraph<
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-
+    // println!("user address is {}",user_address);
     loop {
         terminal.draw(|f| {
             let chunks = Layout::default()
@@ -61,14 +61,23 @@ pub fn run_ui(user_address: &str, transactions: &[Transaction], graph: &DiGraph<
 
                     if from_node == user_address {
                         format!(
-                            "{} ─({})➝ {}",
+                            "{} ─({})-> {}",
                             safe_truncate(from_node, 10),
                             safe_truncate(&edge_label, 10),
                             safe_truncate(to_node, 10)
                         )
-                    } else {
+                    }
+                    else if to_node == user_address {
                         format!(
-                            "{} ⬅({})─ {}",
+                            "{} <─({})─ {}",
+                            safe_truncate(from_node, 10),
+                            safe_truncate(&edge_label, 10),
+                            safe_truncate(to_node, 10)
+                        )
+                    } 
+                    else {
+                        format!(
+                            "{} ─({})─> {}",
                             safe_truncate(from_node, 10),
                             safe_truncate(&edge_label, 10),
                             safe_truncate(to_node, 10)

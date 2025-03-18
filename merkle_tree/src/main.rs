@@ -46,7 +46,7 @@ fn main() {
             println!("\nProof for LEAF {}: {:?}", i + 1, proof);
     
             let is_valid = MerkleTree::<H>::verify_proof(leaves[i].clone(), proof, merkle_tree.get_root());
-            println!("\nProof Verification: {}\n", is_valid);
+            println!("\nProof Verification: {}", is_valid);
         }
     }
 }

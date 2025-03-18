@@ -32,11 +32,11 @@ pub async fn main() -> web3::Result<()> {
 
     let (gas_price, gas_limit, value) = (web3.eth().gas_price().await?, U256::from(21000), U256::exp10(16));
 
-    if balance_sender < value + (gas_limit * gas_price) 
-    {
-        println!("Insufficient balance for transaction.");
-        return Ok(());
-    }
+    // if balance_sender < value + (gas_limit * gas_price) 
+    // {
+    //     println!("Insufficient balance for transaction.");
+    //     return Ok(());
+    // }
 
     // let nonce = web3.eth().transaction_count(sender, None).await?;
     let chain_id = web3.eth().chain_id().await?.as_u64();
